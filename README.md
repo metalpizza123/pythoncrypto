@@ -44,4 +44,9 @@ And after logging in should look like this
 
 ![image](https://user-images.githubusercontent.com/15609080/164075577-18522997-7a58-4573-9798-84c1cdf66cff.png)
 
+# Example setup
 
+There are 3 accounts: boris,julian and varya. They all use the same password:1234
+There is 1 currency:vodka. and boris is the master account for it, and holds the starting currency pool
+
+Go nuts! THERE ARE ERRORS, and unpredictable behaviour due to lack of input sanitisation, but if you delete the contents of the 2 directories, it'll start from scratch just fine.
