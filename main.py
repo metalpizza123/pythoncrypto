@@ -11,11 +11,6 @@ import base64
 import secrets
 
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+8 to toggle the breakpoint.
-
-
 def login(nick, pwd):
     enterName = nick
     enterPwd = pwd
@@ -94,15 +89,16 @@ def saveAccountDetails(acct):
     write_file.close()
 
 
-def saveJSON(dict,path):
+def saveJSON(dict, path):
     with open(path, "w") as write_file:
         json.dump((dict), write_file, indent=4)
     write_file.close()
 
-def saveRegister(currency,userlist):
+
+def saveRegister(currency, userlist):
     absolutedir = os.path.dirname(__file__)
-    relativedir = "currencies/" +str(currency)
-    filename =  str(currency) + "register.json"
+    relativedir = "currencies/" + str(currency)
+    filename = str(currency) + "register.json"
     # print(filename)
     combinedPath = os.path.join(absolutedir, relativedir, filename)
     with open(combinedPath, "w") as write_file:
@@ -161,19 +157,21 @@ def searchJSON(name, type):
                 result.append(os.path.join(root, file))
     return result
 
+
 def fetchNewestUnconfirmedBlockID(currency):
-    blocklist=fetchDataFromLedger(currency,"blocklist")
-    if len(blocklist)==0:
+    blocklist = fetchDataFromLedger(currency, "blocklist")
+    if len(blocklist) == 0:
         return 0
     lastconfirmedID = max(blocklist)
-    nextUnconfirmedID = lastconfirmedID+1
+    nextUnconfirmedID = lastconfirmedID + 1
     print("nextunconfirmedID is " + str(nextUnconfirmedID))
-    confirmedBlock = fetchDataFromBlock(nextUnconfirmedID,currency,"confirmed")
+    confirmedBlock = fetchDataFromBlock(nextUnconfirmedID, currency, "confirmed")
     if confirmedBlock == True:
         print("No new unconfirmed Blocks")
         return False
     else:
         return nextUnconfirmedID
+
 
 def accountCoreLoop():
     loggedin = False
@@ -205,6 +203,8 @@ def accountCoreLoop():
             startminer(acct)
         elif chooseFunction == "5":
             coreloop()
+
+
 def accountCheckBalance(acct):
     chooseCurrency = input("Please enter the name of currency you'd like to add a wallet for: ")
     absolutedir = os.path.join(os.path.dirname(__file__), "currencies")
@@ -218,9 +218,10 @@ def accountCheckBalance(acct):
         if chooseCurrency not in acct["wallets"]:
             print("You don't have a wallet for this currency in this account")
             return
-    balance = getBalance(acct,chooseCurrency)
+    balance = getBalance(acct, chooseCurrency)
     print("Your balance is " + str(balance) + " " + str(chooseCurrency) + " in this account")
     return balance
+
 
 def sendcurrency(acct):
     chooseCurrency = input("Please enter the name of currency you'd like send: ")
@@ -231,71 +232,75 @@ def sendcurrency(acct):
     if isExist == False:
         print("No currency with that name exists \n \n")
         return
-    balance = getBalance(acct,chooseCurrency)
+    balance = getBalance(acct, chooseCurrency)
     print("You have " + str(balance) + " to send")
-    recipient = chooseRecipient(chooseCurrency)
+    recipientaddr = chooseRecipient(chooseCurrency)
     valid = False
     while valid == False:
-        value = int(input("Please enter how much " + str(chooseCurrency) +" you'd like to send: "))
-        if value>balance:
+        value = int(input("Please enter how much " + str(chooseCurrency) + " you'd like to send: "))
+        if value > balance:
             print("Your balance isn't high enough for you to spend that amount")
         else:
             valid = True
     enterpasswd = input("Please enter account password to verify transaction")
-    newTransaction = createTransaction(acct,chooseCurrency,recipient,value,enterpasswd)
-    success = updateBlockwithTransaction(newTransaction,chooseCurrency)
+    newTransaction = createTransaction(acct, chooseCurrency, recipientaddr, value, enterpasswd)
+    success = updateBlockwithTransaction(newTransaction, chooseCurrency)
     if success:
         print("Transaction successful!")
         return
     else:
         print("There's been an error")
         return
-def updateBlockwithTransaction(dictTransaction,currency):
+
+
+def updateBlockwithTransaction(dictTransaction, currency):
     absolutedir = os.path.join(os.path.dirname(__file__), "currencies")
     relativedir = str(currency)
     blockID = fetchNewestUnconfirmedBlockID(currency)
-    filename =currency + "block" + str(blockID) +".json"
-    combinedPath = os.path.join(absolutedir, relativedir,filename)
-    #print(combinedPath)
+    filename = currency + "block" + str(blockID) + ".json"
+    combinedPath = os.path.join(absolutedir, relativedir, filename)
+    # print(combinedPath)
     data = openJSON(combinedPath)
     data["transactions"].append(dictTransaction)
-    hashable=data["hashable"].encode('utf-8')
+    hashable = data["hashable"].encode('utf-8')
     for x in data["transactions"]:
         digest = hashable + (x["hash"]).encode('utf-8')
         hashable = hashlib.sha256(digest).hexdigest()
     data["blockhash"] = hashable
-    saveJSON(data,combinedPath)
+    saveJSON(data, combinedPath)
     return True
+
 
 def chooseRecipient(currency):
     userlistdict = getListofRecipients(currency)
-    for x,y in userlistdict.items():
-        print("Name:" + str(x) + "\n" +"WalletAddress:" + str(y))
+    for x, y in userlistdict.items():
+        print("Name:" + str(x) + "\n" + "WalletAddress:" + str(y))
     choicerecipient = input("Please enter the name of recipient you'd like to send to: ")
     recipient = choicerecipient
-    recipientaddress =userlistdict[choicerecipient]
-    recipientdict = {recipient:recipientaddress}
-    return recipientdict
+    recipientaddress = userlistdict[choicerecipient]
+    recipientaddr = recipientaddress
+    return recipientaddr
+
 
 def getListofRecipients(currency):
     absolutedir = os.path.join(os.path.dirname(__file__), "currencies")
     relativedir = str(currency)
-    filename=currency + "register.json"
-    path = os.path.join(absolutedir,relativedir,filename)
+    filename = currency + "register.json"
+    path = os.path.join(absolutedir, relativedir, filename)
     data = openJSON(path)
-    #generate list of users, search their wallets
-    userfilepathlist = searchJSON("","account")
-    userlistdict ={}
+    # generate list of users, search their wallets
+    userfilepathlist = searchJSON("", "account")
+    userlistdict = {}
     for userpath in userfilepathlist:
-        userdata =  openJSON(userpath)
+        userdata = openJSON(userpath)
         if currency in userdata["wallets"]:
-            userlistdict[userdata["name"]]=userdata["wallets"][currency]
-    #print(userlistdict)
+            userlistdict[userdata["name"]] = userdata["wallets"][currency]
+    # print(userlistdict)
     return userlistdict
 
 
 def startminer(acct):
-    #some basic checks to see if the currency's directory exists, and if you've an address
+    # some basic checks to see if the currency's directory exists, and if you've an address
     chooseCurrency = input("Please enter the name of currency you'd like mine for: ")
     absolutedir = os.path.join(os.path.dirname(__file__), "currencies")
     relativedir = str(chooseCurrency)
@@ -309,8 +314,9 @@ def startminer(acct):
         return
     else:
         minerAddress = acct["wallets"][chooseCurrency]
-        print("Mining to this address" + str(minerAddress))
-    minerMode(chooseCurrency,minerAddress)
+        print("Mining to this address " + str(minerAddress))
+    minerMode(chooseCurrency, minerAddress)
+
 
 # Create a class for transactions
 def dictTransaction(amount, sender, recipient, modulus, publickey, currencyName, formattedprivatekey):
@@ -318,7 +324,7 @@ def dictTransaction(amount, sender, recipient, modulus, publickey, currencyName,
     dict = {}
     saltInt = random.randint(1, 10000000000000000)
     dict.update({"id": (currentTime + "___" + str(recipient) + "___" + str(sender))})
-    dict.update({"salt":saltInt})
+    dict.update({"salt": saltInt})
     dict.update({"amount": amount})
     dict.update({"sender": sender})
     dict.update({"recipient": recipient})
@@ -327,34 +333,35 @@ def dictTransaction(amount, sender, recipient, modulus, publickey, currencyName,
     dict.update({"currency": currencyName})
 
     sign = pow(saltInt, formattedprivatekey, modulus)
-    dict.update({"signature":sign})
-    #Signature of transaction
+    dict.update({"signature": sign})
+    # Signature of transaction
 
     hashable = (str(dict["id"]) + str(dict["amount"]) + str(dict["sender"]) + str(dict["recipient"]) +
                 str(dict["publickey"]) + str(dict["currency"] + str(dict["signature"])))
     hash = hashlib.sha256((hashable).encode('utf-8')).hexdigest()
     print("hash")
-    dict.update({"hash":hash})
-    #Hash of transaction +signature
+    dict.update({"hash": hash})
+    # Hash of transaction +signature
 
     print("Transaction ID is " + str(dict["id"]))
     print("Hash is " + str(hash))
-    print("Signature is " +str(dict["signature"]))
+    print("Signature is " + str(dict["signature"]))
     return dict
 
-def getBalance(acct,currency):
-    #first we need to get their wallet for this currency
+
+def getBalance(acct, currency):
+    # first we need to get their wallet for this currency
     walletaddress = acct["wallets"][currency]
-    #We then have to painstakingly go through each block, fetch a HUGE list of transactions
-    #Then check whether
-    #total add is ALL money that has CONFIRMED to go in
-    #total spend is ALL money, including UNCONFIRMED that goes out
-    blockList = searchJSON(currency,"block")
-    allconfirmedtransactionlist =[]
-    allunconfirmedtransactionlist =[]
+    # We then have to painstakingly go through each block, fetch a HUGE list of transactions
+    # Then check whether
+    # total add is ALL money that has CONFIRMED to go in
+    # total spend is ALL money, including UNCONFIRMED that goes out
+    blockList = searchJSON(currency, "block")
+    allconfirmedtransactionlist = []
+    allunconfirmedtransactionlist = []
     for blockfilepath in blockList:
-        data=openJSON(blockfilepath)
-        transactionlist= data["transactions"]
+        data = openJSON(blockfilepath)
+        transactionlist = data["transactions"]
         if data["confirmed"] == True:
             for transactions in transactionlist:
                 allconfirmedtransactionlist.append(transactions)
@@ -364,23 +371,23 @@ def getBalance(acct,currency):
     totaladd = 0
     totalspend = 0
 
-    if acct["type"] =="masterserve":
+    if acct["type"] == "masterserve":
         totaladd += acct["startingamount"]
     for transaction in allconfirmedtransactionlist:
         transactionvalue = transaction["amount"]
-        if transaction["sender"]==walletaddress:
-            print("You sent" + str(transactionvalue) + currency + " to " +str(transaction["recipient"]))
-            totalspend+=transactionvalue
-        if transaction["recipient"]==walletaddress:
-            print("You received " + str(transactionvalue) + currency + " from  " + str(transaction["sender"]))
-            totaladd+=transactionvalue
-    for transaction in allunconfirmedtransactionlist:
-        if transaction["sender"]==walletaddress:
+        if transaction["sender"] == walletaddress:
             print("You sent" + str(transactionvalue) + currency + " to " + str(transaction["recipient"]))
-            totalspend+=transactionvalue
+            totalspend += transactionvalue
+        if transaction["recipient"] == walletaddress:
+            print("You received " + str(transactionvalue) + currency + " from  " + str(transaction["sender"]))
+            totaladd += transactionvalue
+    for transaction in allunconfirmedtransactionlist:
+        if transaction["sender"] == walletaddress:
+            print("You sent" + str(transactionvalue) + currency + " to " + str(transaction["recipient"]))
+            totalspend += transactionvalue
     print("totaladd is " + str(totaladd))
     print("totalspend is " + str(totalspend))
-    balance = totaladd -totalspend
+    balance = totaladd - totalspend
     if balance < 0:
         print("You are in deficit? no account actions available until balance is 0 or more")
         return
@@ -391,8 +398,8 @@ def getBalance(acct,currency):
 
 def fetchDataFromBlock(id, currency, data):
     blocklist = searchJSON(currency, "block")
-    name = currency + "block" + str(id) +".json"
-    confirmedBlock =""
+    name = currency + "block" + str(id) + ".json"
+    confirmedBlock = ""
     for item in blocklist:
         if item.endswith(name):
             confirmedBlock = item
@@ -401,11 +408,12 @@ def fetchDataFromBlock(id, currency, data):
     hash = formattedData.get(data)
     return hash
 
+
 def fetchDataFromAccount(name, data):
-    filelist = searchJSON(name,"account")
+    filelist = searchJSON(name, "account")
     path = filelist[0]
     print(path)
-    with open(path,"r") as read_file:
+    with open(path, "r") as read_file:
         accountData = json.load(read_file)
     read_file.close()
     return accountData[data]
@@ -416,7 +424,7 @@ class Block:
         if id == 0:
             previousHash = "firstblock"
         else:
-            previousHash = fetchDataFromBlock(id - 1, currency,"blockhash")
+            previousHash = fetchDataFromBlock(id - 1, currency, "blockhash")
         self.difficulty = 60
         self.nonce = ""
         self.currency = currency
@@ -424,9 +432,9 @@ class Block:
         self.previousHash = previousHash
         self.previousID = id - 1
         self.transactions = []
-        self.miner =""
+        self.miner = ""
         self.confirmed = False
-        self.hashable = (str(self.currency) + str(self.id) + str(self.previousHash)+str(self.difficulty))
+        self.hashable = (str(self.currency) + str(self.id) + str(self.previousHash) + str(self.difficulty))
         self.blockhash = hashlib.sha256(self.hashable.encode('utf-8')).hexdigest()
         # The lower the difficulty, the harder it is.
         # In this example, it'll slice off the last 60, so you only need to match the first 4 chars
@@ -450,7 +458,6 @@ class Block:
             hashable = hashlib.sha256(hashable + x.hash).hexdigest()
         self.blockhash = hashable
         return True
-
 
 
 class Account:
@@ -498,13 +505,15 @@ class Account:
     def addWallet(self, currency):
         walletAddress = str(secrets.token_urlsafe(32))
         currency = currency
-        self.wallets[currency]=walletAddress
+        self.wallets[currency] = walletAddress
+
 
 class Ledger:
     def __init__(self, currency, masteraccount):
         self.currency = currency
         self.masteraccountaddress = masteraccount
         self.transactionlist = []
+
 
 def addWallet(acct):
     absolutedir = os.path.join(os.path.dirname(__file__), "currencies")
@@ -522,19 +531,19 @@ def addWallet(acct):
             print("You already have a wallet for this currency")
             return
         walletAddress = str(secrets.token_urlsafe(32))
-        acct["wallets"][chooseCurrency]= walletAddress
-        filename=acct["name"]+(".json")
-        accountdir =  os.path.join(os.path.dirname(__file__), "accounts")
-        filepath = os.path.join(accountdir,filename)
-        saveJSON(acct,filepath)
-        #Now we add this user to list of registered users, looking at currencyregister.json
-        fileList = searchJSON(chooseCurrency,"register")
+        acct["wallets"][chooseCurrency] = walletAddress
+        filename = acct["name"] + (".json")
+        accountdir = os.path.join(os.path.dirname(__file__), "accounts")
+        filepath = os.path.join(accountdir, filename)
+        saveJSON(acct, filepath)
+        # Now we add this user to list of registered users, looking at currencyregister.json
+        fileList = searchJSON(chooseCurrency, "register")
         if len(fileList) == 1:
             path = fileList[0]
             print(path)
             registerData = openJSON(path)
             registerData["users"].append(walletAddress)
-            saveJSON(registerData,path)
+            saveJSON(registerData, path)
         print("Wallet successfully added\n \n")
         return
 
@@ -601,9 +610,9 @@ def createCurrency():
     # Here, since we have an account saved, and currency directory, we can create the dictionary storing registered users
     # It's not meant to be exhaustive, but it's a good idea for now. Will work on no-tamper features later
     print(newmasteraccount.wallets)
-    registeredusers = {"users":[newmasteraccount.wallets[currencyName]]}
+    registeredusers = {"users": [newmasteraccount.wallets[currencyName]]}
 
-    saveRegister(currencyName,registeredusers)
+    saveRegister(currencyName, registeredusers)
     # But account is now saved\
     print("Now login to your account to generate first transaction to yourself")
     enterName = input("Please enter account username: ")
@@ -628,49 +637,39 @@ def createCurrency():
     saveLedgerDetails(newLedger)
     # since block isn't confirmed, let's hash the first block
     # All we need is a currrency name and miner address
-    minerMode(currencyName,masteraddress)
+    minerMode(currencyName, masteraddress)
 
     print("Currency " + str(currencyName + " created. Log into the master account to send it to other addresses,\n"
                                            " or register new accounts to use it.\n \n \n"))
 
     coreloop()
 
-def minerMode(currency,miner):
+
+def minerMode(currency, miner):
     id = fetchNewestUnconfirmedBlockID(currency)
     transactionlist = fetchDataFromBlock(id, currency, "transactions")
     if id == None:
         print("No Blocks with pending transactions")
         return
-    if len(transactionlist)==0:
+    if len(transactionlist) == 0:
         print("Block has no transactions pending")
         return
-    blockHash = fetchDataFromBlock(id,currency,"blockhash")
-    print("Fetch hash is " +  str(blockHash))
-    difficulty = fetchDataFromBlock(id,currency,"difficulty")
+    blockHash = fetchDataFromBlock(id, currency, "blockhash")
+    print("Fetch hash is " + str(blockHash))
+    difficulty = fetchDataFromBlock(id, currency, "difficulty")
     print("difficulty is " + str(difficulty))
-    nonce = mine(blockHash,difficulty)
+    nonce = mine(blockHash, difficulty)
     print("nonce is" + str(nonce))
-    confirmBlockNonce(currency,id,nonce,miner)
+    confirmBlockNonce(currency, id, nonce, miner)
     print("Block succesfully mined!")
     return
 
+
 def fetchDataFromLedger(currency, data):
     absolutedir = os.path.join(os.path.dirname(__file__), "currencies")
     relativedir = str(currency)
     filename = str(currency) + "ledger.json"
-    totalpath = os.path.join(absolutedir,relativedir,filename)
-    print(totalpath)
-    isExist = os.path.exists(totalpath)
-    if isExist == True:
-        filedata = open(totalpath, 'r')
-        formattedData = json.load(filedata)
-        value = formattedData.get(data)
-    return value
-def fetchDataFromLedger(currency, data):
-    absolutedir = os.path.join(os.path.dirname(__file__), "currencies")
-    relativedir = str(currency)
-    filename = str(currency) + "ledger.json"
-    totalpath = os.path.join(absolutedir,relativedir,filename)
+    totalpath = os.path.join(absolutedir, relativedir, filename)
     print(totalpath)
     isExist = os.path.exists(totalpath)
     if isExist == True:
@@ -679,13 +678,28 @@ def fetchDataFromLedger(currency, data):
         value = formattedData.get(data)
     return value
 
-def mine(hash,difficulty):
+
+def fetchDataFromLedger(currency, data):
+    absolutedir = os.path.join(os.path.dirname(__file__), "currencies")
+    relativedir = str(currency)
+    filename = str(currency) + "ledger.json"
+    totalpath = os.path.join(absolutedir, relativedir, filename)
+    print(totalpath)
+    isExist = os.path.exists(totalpath)
+    if isExist == True:
+        filedata = open(totalpath, 'r')
+        formattedData = json.load(filedata)
+        value = formattedData.get(data)
+    return value
+
+
+def mine(hash, difficulty):
     hashed = False;
     shalimit = (pow(2, 64)) - 1
     slicedHash = str(hash)[0: -(difficulty)]
     while (hashed == False):
         guess = random.randint(0, shalimit)
-        #print("guess is " + str(guess))
+        print("guess is " + str(guess))
         byteGuess = guess.to_bytes(64, 'big')
         hashGuess = hashlib.sha256(byteGuess).hexdigest()
         slicedGuess = str(hashGuess)[0: -(difficulty)]
@@ -694,6 +708,7 @@ def mine(hash,difficulty):
             hashed = True
     print("success")
     return guess
+
 
 def createTransaction(acct, currencyName, recipient, amount, pwd):
     # first fetch the privatekey
@@ -719,6 +734,7 @@ def createTransaction(acct, currencyName, recipient, amount, pwd):
     newTransaction = dictTransaction(amount, sender, recipient, modulus, publickey, currencyName, formattedprivatekey)
     return newTransaction
 
+
 def openAccount(name):
     listAccounts = searchJSON(name, "account")
     if len(listAccounts) != 1:
@@ -729,21 +745,22 @@ def openAccount(name):
         acct = openJSON(listAccounts[0])
     return acct
 
-def confirmBlockNonce(currency,id,nonceguess,miner):
-    hash = fetchDataFromBlock(id, currency,"blockhash")
-    difficulty = fetchDataFromBlock(id,currency,"difficulty")
+
+def confirmBlockNonce(currency, id, nonceguess, miner):
+    hash = fetchDataFromBlock(id, currency, "blockhash")
+    difficulty = fetchDataFromBlock(id, currency, "difficulty")
     byteGuess = nonceguess.to_bytes(64, 'big')
     hashGuess = hashlib.sha256(byteGuess).hexdigest()
     slicedGuess = str(hashGuess)[0: -(difficulty)]
     slicedHash = str(hash)[0: -(difficulty)]
     slicedHash = str(hash)[0: -(difficulty)]
-    #quick check if it's valid
+    # quick check if it's valid
     print("slicedguess is " + str(slicedGuess))
     print("sliceedhash is " + str(slicedHash))
     if slicedGuess == slicedHash:
-        confirmBlock(currency,id,nonceguess,miner)
-        newid = id +1
-        newBlock = Block(newid,currency)
+        confirmBlock(currency, id, nonceguess, miner)
+        newid = id + 1
+        newBlock = Block(newid, currency)
         saveBlockDetails(newBlock)
         print("New block created")
         addBlockToLedger(id, currency)
@@ -751,13 +768,14 @@ def confirmBlockNonce(currency,id,nonceguess,miner):
     else:
         return False
 
-def addBlockToLedger(id,currency):
+
+def addBlockToLedger(id, currency):
     absolutedir = os.path.dirname(__file__)
     relativedir = "currencies/" + str(currency)
     filename = str(currency) + "ledger.json"
-    totalpath = os.path.join(absolutedir,relativedir,filename)
+    totalpath = os.path.join(absolutedir, relativedir, filename)
     print(totalpath)
-    with open(totalpath,"r") as read_file:
+    with open(totalpath, "r") as read_file:
         accountData = json.load(read_file)
     read_file.close()
     accountData["blocklist"].append(id)
@@ -765,21 +783,23 @@ def addBlockToLedger(id,currency):
         json.dump((accountData), write_file, indent=4)
     write_file.close()
 
-def confirmBlock(currency,id,nonce,miner):
+
+def confirmBlock(currency, id, nonce, miner):
     absolutedir = os.path.dirname(__file__)
     relativedir = "currencies/" + str(currency)
     filename = currency + "block" + str(id) + ".json"
-    totalpath = os.path.join(absolutedir,relativedir,filename)
+    totalpath = os.path.join(absolutedir, relativedir, filename)
     print(totalpath)
-    with open(totalpath,"r") as read_file:
+    with open(totalpath, "r") as read_file:
         accountData = json.load(read_file)
     read_file.close()
-    accountData["confirmed"]= True
-    accountData["nonce"]=nonce
-    accountData['miner']=miner
+    accountData["confirmed"] = True
+    accountData["nonce"] = nonce
+    accountData['miner'] = miner
     with open(totalpath, "w") as write_file:
         json.dump((accountData), write_file, indent=4)
     write_file.close()
+
 
 def openJSON(path):
     file = open(path, 'r')
@@ -787,7 +807,11 @@ def openJSON(path):
     file.close()
     return data
 
+
 def coreloop():
+    print("")
+    print("Welcome to Julian's PyCrypto project")
+    print("______________________________________________________________________")
     print("1) Create an account \n")
     print("2) Login to account \n")
     print("3) Check ledger of accepted transactions for a currency NOT DONE \n")
@@ -807,11 +831,9 @@ def coreloop():
         createCurrency()
     elif chooseFunction == "5":
         exit()
-    else: coreloop()
+    else:
+        coreloop()
 
 
-# Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    print_hi('PyCharm')
     coreloop()
-    #minerMode("vodka","0-OQ6kYM7kl1ptkFEB4j0DRq2FvGOsVVQWW5eWsN5os")
