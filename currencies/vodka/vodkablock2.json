@@ -1,0 +1,13 @@
+{
+    "difficulty": 60,
+    "nonce": "",
+    "currency": "vodka",
+    "id": 2,
+    "previousHash": "7ea796182bf75cf7e0349b0411427b59b16ad78cece7bf1da40f01fc5148d0c5",
+    "previousID": 1,
+    "transactions": [],
+    "miner": "",
+    "confirmed": false,
+    "hashable": "vodka27ea796182bf75cf7e0349b0411427b59b16ad78cece7bf1da40f01fc5148d0c560",
+    "blockhash": "2d02a49a89734107e89fb3a0b23c0fae1b817581b9ac62c2234618746902d9a7"
+}
